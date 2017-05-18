@@ -33,7 +33,8 @@ conversions = {'HSV':cv2.COLOR_BGR2HSV,
 # use hog feature from cv2
 # NB! use uint8!!!
 
-def get_hog_features(image, orient = 9, pix_per_cell = 8, cell_per_block = 2, winsize = 32):
+def get_hog_features(image, orient = 9, pix_per_cell = 8, cell_per_block = 2, 
+                     winsize = 32, winstride = 1):
 
     #translate sklearn parameters into OpenCV    
     block_size = pix_per_cell * cell_per_block;
@@ -44,8 +45,9 @@ def get_hog_features(image, orient = 9, pix_per_cell = 8, cell_per_block = 2, wi
                                (block_stride,block_stride), 
                                (pix_per_cell,pix_per_cell), 
                                orient)
+    stride = pix_per_cell * winstride 
     
-    features = hog_cv.compute(image);
+    features = hog_cv.compute(image, (stride,stride));
     
     return features
         
@@ -225,4 +227,20 @@ t2 = time.time()
 print("my on my",sum( yr != myY_test[idx[0:n_predict]]), " mistakes from ", n_predict)
 print(round(t2-t, 5), 'Seconds to predict', n_predict,'labels with SVC')
 
+#%%
+unX_train = np.vstack((myX_train, X_train));
+unY_train = np.hstack((myY_train, y_train));
+unX_test  = np.vstack((X_test, myX_test));
+unY_test  = np.hstack((y_test, myY_test));
+
+from sklearn.utils import shuffle
+
+unX_train, unY_train = shuffle(unX_train, unY_train)
+
+unX_test, unY_test = shuffle(unX_test, unY_test)
+
+unSvm = cv_svm (unX_train, unX_test, unY_train, unY_test)
+
+print('Test Accuracy of unSVC on my data = ', round(score(unSvm,myX_test, myY_test), 4))
+print('Test Accuracy of unSVC on  u data = ', round(score(unSvm,X_test, y_test), 4))
 
