@@ -31,7 +31,7 @@ def cv_svm (X_train, X_test, y_train, y_test):
     t2 = time.time()
      
     # Save trained model 
-    svm.save("u_svm_model.yml");
+    svm.save("./models/u_svm_model.yml");
      
     # Test on a held out test set
     testResponse = svm.predict(X_test)[1].ravel()
