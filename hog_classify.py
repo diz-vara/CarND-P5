@@ -13,8 +13,10 @@ import glob
 import time
 from sklearn.preprocessing import StandardScaler
 # NOTE: the next import is only valid for scikit-learn version <= 0.17
+
+from sklearn.cross_validation import train_test_split
 # for scikit-learn >= 0.18 use:
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 #from sklearn.cross_validation import train_test_split
 
 
@@ -241,6 +243,6 @@ unX_test, unY_test = shuffle(unX_test, unY_test)
 
 unSvm = cv_svm (unX_train, unX_test, unY_train, unY_test)
 
-print('Test Accuracy of unSVC on my data = ', round(score(unSvm,myX_test, myY_test), 4))
-print('Test Accuracy of unSVC on  u data = ', round(score(unSvm,X_test, y_test), 4))
+print('Test Accuracy of unSvm on my data = ', round(score(unSvm,myX_test, myY_test), 4))
+print('Test Accuracy of unSvm on  u data = ', round(score(unSvm,X_test, y_test), 4))
 
