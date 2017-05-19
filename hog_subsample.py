@@ -153,6 +153,21 @@ def add_heat(heatmap, bbox_list):
     # Return updated heatmap
     return heatmap# Iterate through list of bboxes
     
+def draw_labeled_bboxes(img, labels):
+    # Iterate through all detected cars
+    for car_number in range(1, labels[1]+1):
+        # Find pixels with each car_number label value
+        nonzero = (labels[0] == car_number).nonzero()
+        # Identify x and y values of those pixels
+        nonzeroy = np.array(nonzero[0])
+        nonzerox = np.array(nonzero[1])
+        # Define a bounding box based on min/max x and y
+        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
+        # Draw the box on the image
+        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 6)
+    # Return the image
+    return img
+    
 #%%
 
 heat = np.zeros_like(img[:,:,0]).astype(np.float)
@@ -160,13 +175,20 @@ heat = np.zeros_like(img[:,:,0]).astype(np.float)
 t=time.time()
 
 for i in [3,4,5]:
-    boxes = boxes_multy_scale(images[i])
+    img = images[i]
+    boxes = boxes_multy_scale(img)
     heat = add_heat(heat*0.9,boxes)
 t2=time.time()
 print(round((t2-t)*1000), 'ms for image')
 
 #out_img = draw_bboxes(img, boxes)
-thr = 1.2
+thr = 1.9
 heat[ heat < thr] = 0
 plt.imshow(heat)
+
+from scipy.ndimage.measurements import label
+
+labels = label(heat)
+draw_img = draw_labeled_bboxes(np.copy(img), labels)
+plt.imshow(draw_img)
 
