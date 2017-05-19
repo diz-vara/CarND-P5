@@ -68,11 +68,12 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, window, cells_per_step).reshape(hogShape)
     
     #patches = np.zeros((nysteps, nxsteps, window, window,3),np.uint8)
-    
+    boxes = np.zeros((nxsteps*nysteps,2,2), np.int32)
     bboxes = []
+    features = np.zeros((nxsteps*nysteps, hogSize*3), np.float32)
     #todo: loop
-    for xb in range(nxsteps):
-        for yb in range(nysteps):
+    for yb in range(nysteps):
+        for xb in range(nxsteps):
             # Extract HOG for this patch
             
             ypos = yb*cells_per_step
@@ -97,16 +98,16 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
             #hist_features = color_hist(subimg, nbins=hist_bins)
 
             # Scale features and make a prediction
-            test_features = X_scaler.transform(hog_features.reshape(1,-1))    
+            features[yb*nxsteps + xb] = (X_scaler.transform(hog_features.reshape(1,-1)))
+            boxes[yb*nxsteps + xb]  = ((xleft*scale, ytop*scale + ystart), 
+                                       ((xleft+window)*scale, (ytop+window)*scale+ystart))
             #test_features = X_scaler.transform(np.hstack((shape_feat, hist_feat)).reshape(1, -1))    
-            test_prediction = unSvm.predict(test_features)[1].ravel()
-            
-            xbox_left = np.int(xleft*scale)
-            ytop_draw = np.int(ytop*scale)
-
-            if test_prediction == 1:
-                bboxes.append( ( (xbox_left, ytop_draw+ystart),  
-                                 (xbox_left+win_draw,ytop_draw+win_draw+ystart)) );
+    
+    prediction = unSvm.predict(features)[1].ravel()
+         
+    for i in range(len(prediction)):
+        if (prediction[i] == 1):
+            bboxes.append( boxes[i] );
                 
     return bboxes
     
@@ -120,7 +121,7 @@ def draw_bboxes(img, bboxes):
 
     for box in boxes:
         #print ("detected at", xb,yb, xbox_left, ytop_draw)
-        cv2.rectangle(draw_img,box[0], box[1], color, thickness) 
+        cv2.rectangle(draw_img, tuple(box[0]), tuple(box[1]), color, thickness) 
     return draw_img    
 
 #%%
@@ -137,10 +138,12 @@ plt.imshow(out_img)
 
 def boxes_multy_scale(img):
     boxes  = find_cars(img, 400, 500, 3, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes2 = find_cars(img, 400, 560, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes3 = find_cars(img, 400, 528, 4, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes2 = find_cars(img, 400, 528, 4, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes3 = find_cars(img, 400, 560, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes4 = find_cars(img, 400, 600, 6, mySvm, X_scaler, 11, 8, 2, 32, 2)
     boxes.extend( boxes2 )
     boxes.extend( boxes3 )
+    boxes.extend( boxes4 )
     return boxes
     
 def add_heat(heatmap, bbox_list):
@@ -182,13 +185,35 @@ t2=time.time()
 print(round((t2-t)*1000), 'ms for image')
 
 #out_img = draw_bboxes(img, boxes)
-thr = 1.9
+thr = 6
 heat[ heat < thr] = 0
-plt.imshow(heat)
+#plt.imshow(heat)
 
 from scipy.ndimage.measurements import label
 
 labels = label(heat)
 draw_img = draw_labeled_bboxes(np.copy(img), labels)
 plt.imshow(draw_img)
+
+#%%
+#main processing pipeline
+thr = 12
+tau = 0.95
+def process_image(image):
+    global heat;
+
+
+    boxes = boxes_multy_scale(image)
+    heat = add_heat(heat*tau,boxes)
+    
+    heat_thr = heat.copy();
+    heat_thr[heat_thr < thr] = 0;
+
+    labels = label(heat_thr)
+    draw_img = draw_labeled_bboxes(np.copy(image), labels)
+
+    return draw_img
+    
+
+#%%
 

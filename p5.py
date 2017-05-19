@@ -48,3 +48,14 @@ myCars = get_image_list(myPath + 'Car')
 myNotCars = get_image_list(myPath + 'Etc')
 
 #%%
+heat = np.zeros_like(img[:,:,0]).astype(np.float)
+thr = 12
+tau = 0.96
+from moviepy.editor import VideoFileClip
+#from IPython.display import HTML
+     
+video_output = 'out/p5_result.mp4'
+clip2 = VideoFileClip('project_video.mp4')
+first_clip = clip2.fl_image(process_image)
+get_ipython().magic('time first_clip.write_videofile(video_output, audio=False)')
+

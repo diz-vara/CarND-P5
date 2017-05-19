@@ -168,7 +168,10 @@ np.random.shuffle(idx)
 
 t=time.time()
 n_predict = 1000
-yr = uSvm.predict(X_test[idx[0:n_predict]])[1].ravel()
+yr = np.zeros(n_predict)
+
+#for i in range (n_predict):
+yr = uSvm.predict(X_test[idx[:n_predict]])[1].ravel()
 print(sum( yr != y_test[idx[0:n_predict]]), " mistakes from ", n_predict)
 #print('For these',n_predict, 'labels: ', y_test[0:n_predict])
 t2 = time.time()
