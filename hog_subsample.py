@@ -31,8 +31,6 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
     global hot_features
     global patches
     
-    draw_img = np.copy(img)
-    #img = img.astype(np.float32)/255
     
     img_tosearch = img[ystart:ystop,:,:]
     ctrans_tosearch = cv2.cvtColor(img_tosearch, cv2.COLOR_RGB2HLS)
@@ -51,6 +49,8 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
     
     # 64 was the orginal sampling rate, with 8 cells and 8 pix per cell
     window = spatial_size
+    win_draw = np.int(window*scale)
+
     nblocks_per_window = (window // pix_per_cell) - cell_per_block + 1
     #cells_per_step = 2  # Instead of overlap, define how many cells to step
     nxsteps = (nxblocks - nblocks_per_window) // cells_per_step + 1
@@ -67,9 +67,9 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
     hog2 = get_hog_features(ch2, orient, pix_per_cell, cell_per_block, window, cells_per_step).reshape(hogShape)
     hog3 = get_hog_features(ch3, orient, pix_per_cell, cell_per_block, window, cells_per_step).reshape(hogShape)
     
-    patches = np.zeros((nysteps, nxsteps, window, window,3),np.uint8)
+    #patches = np.zeros((nysteps, nxsteps, window, window,3),np.uint8)
     
-    
+    bboxes = []
     #todo: loop
     for xb in range(nxsteps):
         for yb in range(nysteps):
@@ -89,8 +89,8 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
             hog_features = np.hstack((hog_feat1, hog_feat2, hog_feat3))
 
             # Extract the image patch
-            subimg = ctrans_tosearch[ytop:ytop+window, xleft:xleft+window]
-            patches[yb,xb] = subimg
+            #subimg = ctrans_tosearch[ytop:ytop+window, xleft:xleft+window]
+            #patches[yb,xb] = subimg
           
             # Get color features
             #spatial_features = bin_spatial(subimg, size=spatial_size)
@@ -105,19 +105,68 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
             ytop_draw = np.int(ytop*scale)
 
             if test_prediction == 1:
-                color = (0,0,255)
-                thickness = 6
-                print ("detected at", xb,yb, xbox_left, ytop_draw)
-                win_draw = np.int(window*scale)
-                cv2.rectangle(draw_img,(xbox_left, ytop_draw+ystart),
-                              (xbox_left+win_draw,ytop_draw+win_draw+ystart),
-                              color,thickness) 
+                bboxes.append( ( (xbox_left, ytop_draw+ystart),  
+                                 (xbox_left+win_draw,ytop_draw+win_draw+ystart)) );
                 
-    return draw_img
+    return bboxes
     
+#%%
+def draw_bboxes(img, bboxes):
+    draw_img = np.copy(img)
+
+    color = (0,0,255)
+    thickness = 6
+
+
+    for box in boxes:
+        #print ("detected at", xb,yb, xbox_left, ytop_draw)
+        cv2.rectangle(draw_img,box[0], box[1], color, thickness) 
+    return draw_img    
 
 #%%
-    
-out_img = find_cars(images[3], ystart, ystop, 3.2, mySvm, X_scaler, 11, 8, 2, 32, 1)
+img = images[4]
+t=time.time()
+boxes = find_cars(img, 400, 600, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
+t2=time.time()
+print(round((t2-t)*1000), 'ms for image')
 
+out_img = draw_bboxes(img, boxes)
 plt.imshow(out_img)
+
+#%%
+
+def boxes_multy_scale(img):
+    boxes  = find_cars(img, 400, 500, 3, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes2 = find_cars(img, 400, 560, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes3 = find_cars(img, 400, 528, 4, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes.extend( boxes2 )
+    boxes.extend( boxes3 )
+    return boxes
+    
+def add_heat(heatmap, bbox_list):
+    # Iterate through list of bboxes
+    for box in bbox_list:
+        # Add += 1 for all pixels inside each bbox
+        # Assuming each "box" takes the form ((x1, y1), (x2, y2))
+        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+
+    # Return updated heatmap
+    return heatmap# Iterate through list of bboxes
+    
+#%%
+
+heat = np.zeros_like(img[:,:,0]).astype(np.float)
+
+t=time.time()
+
+for i in [3,4,5]:
+    boxes = boxes_multy_scale(images[i])
+    heat = add_heat(heat*0.9,boxes)
+t2=time.time()
+print(round((t2-t)*1000), 'ms for image')
+
+#out_img = draw_bboxes(img, boxes)
+thr = 1.2
+heat[ heat < thr] = 0
+plt.imshow(heat)
+
