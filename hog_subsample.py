@@ -139,15 +139,16 @@ plt.imshow(out_img)
 def boxes_multy_scale(img):
     boxes  = find_cars(img, 400, 500, 3, mySvm, X_scaler, 11, 8, 2, 32, 2)
     boxes2 = find_cars(img, 400, 528, 4, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes3 = find_cars(img, 400, 560, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes4 = find_cars(img, 400, 600, 6, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    boxes3 = find_cars(img, 400, 600, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
+    #boxes4 = find_cars(img, 400, 600, 5.5, mySvm, X_scaler, 11, 8, 2, 32, 2)
     boxes.extend( boxes2 )
     boxes.extend( boxes3 )
-    boxes.extend( boxes4 )
+    #boxes.extend( boxes4 )
     return boxes
     
-def add_heat(heatmap, bbox_list):
+def add_heat(heatmap, bbox_list, tau=0.9):
     # Iterate through list of bboxes
+    heatmap = heatmap * tau
     for box in bbox_list:
         # Add += 1 for all pixels inside each bbox
         # Assuming each "box" takes the form ((x1, y1), (x2, y2))
@@ -174,13 +175,13 @@ def draw_labeled_bboxes(img, labels):
 #%%
 
 heat = np.zeros_like(img[:,:,0]).astype(np.float)
-
+tau = 0.9
 t=time.time()
 
 for i in [3,4,5]:
     img = images[i]
     boxes = boxes_multy_scale(img)
-    heat = add_heat(heat*0.9,boxes)
+    heat = add_heat(heat,boxes,tau)
 t2=time.time()
 print(round((t2-t)*1000), 'ms for image')
 
@@ -204,7 +205,7 @@ def process_image(image):
 
 
     boxes = boxes_multy_scale(image)
-    heat = add_heat(heat*tau,boxes)
+    heat = add_heat(heat,boxes,tau)
     
     heat_thr = heat.copy();
     heat_thr[heat_thr < thr] = 0;
