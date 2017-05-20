@@ -137,13 +137,13 @@ plt.imshow(out_img)
 #%%
 
 def boxes_multy_scale(img):
-    boxes  = find_cars(img, 400, 500, 3, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes2 = find_cars(img, 400, 528, 4, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes3 = find_cars(img, 400, 600, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    #boxes4 = find_cars(img, 400, 600, 5.5, mySvm, X_scaler, 11, 8, 2, 32, 2)
-    boxes.extend( boxes2 )
-    boxes.extend( boxes3 )
-    #boxes.extend( boxes4 )
+    global scales
+    global window
+    top = 400
+    boxes = []
+    for scale in scales:
+        bottom = 400 + np.int(window * scale) + 1
+        boxes.extend(find_cars(img, top, bottom, scale, mySvm, X_scaler, 11, 8, 2, 32, 2))
     return boxes
     
 def add_heat(heatmap, bbox_list, tau=0.9):

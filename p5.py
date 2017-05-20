@@ -49,12 +49,14 @@ myNotCars = get_image_list(myPath + 'Etc')
 
 #%%
 heat = np.zeros_like(img[:,:,0]).astype(np.float)
-thr = 9.5
+window = 32
+thr = 9
 tau = 0.96
+scales = [3.5, 4, 4,5]
 from moviepy.editor import VideoFileClip
 #from IPython.display import HTML
      
-video_output = 'out/p5_096_095.mp4'
+video_output = 'out/p5sc_096_09.mp4'
 clip = VideoFileClip('project_video.mp4')
 #clip = VideoFileClip('E:\\Data\\USA\\Video\\cuts\\multiple_01.avi') 
 first_clip = clip.fl_image(process_image)
