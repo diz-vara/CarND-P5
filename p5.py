@@ -52,12 +52,12 @@ heat = np.zeros_like(img[:,:,0]).astype(np.float)
 window = 32
 thr = 11
 tau = 0.96
-scales = [3.5, 3.75, 4, 4.25, 4.5]
+scales = [3.5, 4, 4.4]
 from moviepy.editor import VideoFileClip
 #from IPython.display import HTML
      
-for thr in [10, 11, 12, 13, 14]:
-    for tau in [0.92, 0.93, 0.95, 0.96, 0.97]:
+for thr in [12, 13, 14]:
+    for tau in [0.93, 0.95,  00.97, 0.98]:
         video_output = 'out/p5sc%d_%.2f_%.1f.mp4' % (len(scales), tau, thr)
         clip = VideoFileClip('project_video.mp4')
         #clip = VideoFileClip('E:\\Data\\USA\\Video\\cuts\\multiple_01.avi') 
