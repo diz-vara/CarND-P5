@@ -4,6 +4,8 @@ Created on Wed May 17 21:53:28 2017
 
 @author: diz
 """
+import numpy as np
+import cv2
 
     
 
