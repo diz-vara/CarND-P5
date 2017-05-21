@@ -2,7 +2,7 @@
 """
 Created on Sun May 14 18:53:35 2017
 
-@author: diz
+@author: Anton Varfolomeev
 """
 
 import matplotlib.image as mpimg

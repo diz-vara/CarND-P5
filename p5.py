@@ -2,7 +2,7 @@
 """
 Created on Mon May 15 22:36:12 2017
 
-@author: diz
+@author: Anton Varfolomeev
 """
 
 import pickle
