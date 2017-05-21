@@ -45,21 +45,21 @@ notcars = get_image_list(path+'non-vehicles')
 
 myPath = 'e:/data/carnd/p5/my/'
 myCars = get_image_list(myPath + 'Car')
-myNotCars = get_image_list(myPath + 'Etc')
+myNotCars = get_image_list(myPath + 'NotCars')
 
 #%%
-heat = np.zeros_like(img[:,:,0]).astype(np.float)
 window = 32
 thr = 11
 tau = 0.96
-scales = [3.5, 4, 4.4]
+scales = [3, 4, 5]
 from moviepy.editor import VideoFileClip
 #from IPython.display import HTML
      
-for thr in [12, 13, 14]:
-    for tau in [0.93, 0.95,  00.97, 0.98]:
+for thr in [ 9, 10, 11, 12]:
+    for tau in [0.97, 0.96, 0.95]:
+        heat = np.zeros_like(img[:,:,0]).astype(np.float)
         video_output = 'out/p5sc%d_%.2f_%.1f.mp4' % (len(scales), tau, thr)
-        clip = VideoFileClip('project_video.mp4')
+        clip = VideoFileClip('project_video.mp4') #.subclip(30,45)
         #clip = VideoFileClip('E:\\Data\\USA\\Video\\cuts\\multiple_01.avi') 
         first_clip = clip.fl_image(process_image)
         get_ipython().magic('time first_clip.write_videofile(video_output, audio=False)')

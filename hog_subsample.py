@@ -59,7 +59,7 @@ def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell,
     # size of one hog vector
     hogSize = nblocks_per_window * nblocks_per_window * cell_per_block * cell_per_block * orient
 
-    #define shape for target vectors
+    #define shape for target matrices
     hogShape = (nysteps, nxsteps, hogSize)
     # Compute individual channel HOG features for the entire image
     #done hog_cv.compute (ch1, (16,16))
@@ -140,10 +140,14 @@ def boxes_multy_scale(img):
     global scales
     global window
     top = 400
+    cell = 8 #cell size in pixels
+    shift = 2 #shift in cells
     boxes = []
     for scale in scales:
-        bottom = 400 + np.int(window * scale) + 1
-        boxes.extend(find_cars(img, top, bottom, scale, mySvm, X_scaler, 11, 8, 2, 32, 2))
+        #bottom = top + np.int(window * scale) + 1
+        bottom = top + np.int(window * scale + cell * shift * scale) + 1
+        boxes.extend(find_cars(img, top, bottom, scale, mySvm, X_scaler, 11, 
+                               cell, 2, window, shift))
     return boxes
     
 def add_heat(heatmap, bbox_list, tau=0.9):
@@ -152,7 +156,12 @@ def add_heat(heatmap, bbox_list, tau=0.9):
     for box in bbox_list:
         # Add += 1 for all pixels inside each bbox
         # Assuming each "box" takes the form ((x1, y1), (x2, y2))
-        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += 1
+        width = box[1][1]-box[0][1];
+        height = box[1][0]-box[0][0];
+        bx = np.ones(( width, height), np.float32) #/2
+        #bx2 = np.ones((width//2, height//2), np.float32)/2
+        #bx[width//4:(width + width//2)//2, height//4:(height+height//2)//2] += bx2                
+        heatmap[box[0][1]:box[1][1], box[0][0]:box[1][0]] += bx
 
     # Return updated heatmap
     return heatmap# Iterate through list of bboxes
@@ -166,9 +175,16 @@ def draw_labeled_bboxes(img, labels):
         nonzeroy = np.array(nonzero[0])
         nonzerox = np.array(nonzero[1])
         # Define a bounding box based on min/max x and y
-        bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
-        # Draw the box on the image
-        cv2.rectangle(img, bbox[0], bbox[1], (0,0,255), 6)
+        x0 = np.min(nonzerox)
+        x1 = np.max(nonzerox)
+        y0 = np.min(nonzeroy)
+        y1 = np.max(nonzeroy)
+        w = x1 - x0
+        h = y1 - y0
+        if (w > window * 2 and h > window * 2):
+            bbox = ((x0, y0), (x1, y1))
+            # Draw the box on the image
+            cv2.rectangle(img, bbox[0], bbox[1], (0,100,0), 3)
     # Return the image
     return img
     
@@ -187,7 +203,7 @@ print(round((t2-t)*1000), 'ms for image')
 
 #out_img = draw_bboxes(img, boxes)
 thr = 6
-heat[ heat < thr] = 0
+#heat[ heat < thr] = 0
 #plt.imshow(heat)
 
 from scipy.ndimage.measurements import label
@@ -198,8 +214,6 @@ plt.imshow(draw_img)
 
 #%%
 #main processing pipeline
-thr = 12
-tau = 0.95
 def process_image(image):
     global heat;
 

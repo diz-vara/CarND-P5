@@ -11,7 +11,7 @@ import cv2
 
 # Set up SVM from OpenCV 3
 def cv_svm (X_train, X_test, y_train, y_test):
-    C=2.3
+    C=0.8
     kernel = 'rbf'
     gamma = 6.5e-4
 

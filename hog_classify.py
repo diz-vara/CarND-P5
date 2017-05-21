@@ -203,7 +203,7 @@ myY = np.hstack((np.ones(len(myCarFeatures)),
 # Split up data into randomized training and test sets
 rand_state = np.random.randint(0, 100)
 myX_train, myX_test, myY_train, myY_test = train_test_split(
-    scaled_X, myY, test_size=0.2, random_state=rand_state)
+    scaled_X, myY, test_size=0.1, random_state=rand_state)
 #%%
 mySvm = cv_svm (myX_train, myX_test, myY_train, myY_test)
 
@@ -244,8 +244,27 @@ unX_train, unY_train = shuffle(unX_train, unY_train)
 
 unX_test, unY_test = shuffle(unX_test, unY_test)
 
+#%%
 unSvm = cv_svm (unX_train, unX_test, unY_train, unY_test)
 
 print('Test Accuracy of unSvm on my data = ', round(score(unSvm,myX_test, myY_test), 4))
 print('Test Accuracy of unSvm on  u data = ', round(score(unSvm,X_test, y_test), 4))
+
+#%%
+from sklearn import svm
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
+do_fit = True;
+
+if (do_fit):
+    parameters = {'C': np.arange(0.5, 2.4, .1), 'gamma': np.arange(6.4e-4, 6.6e-4, 1e-5)}
+    svr = svm.SVC()
+    clf = GridSearchCV(svr, parameters)
+    np.random.shuffle(idx)
+    X_tr = unX_train[idx[:1000]]
+    y_tr = unY_train[idx[:1000]]
+    
+    clf.fit(X_tr, y_tr)
+    
+    print(clf.best_params_, clf.best_score_)
 
