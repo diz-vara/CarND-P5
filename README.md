@@ -8,14 +8,15 @@ The goals / steps of this project are the following:
 * Run pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
-
+Main pipeline for this project you can find in the file `p5.py`, with all fucntions in files 
+`extract_features.py` and `process_image.py`.
 
 ### Histogram of Oriented Gradients (HOG)
 
 
 ### 1. Dataset
 
-I started with the dataset, provided by Udacity, but soon uppended it with [my own dataset](https://drive.google.com/file/d/0BySmjNMv1bBCdVR6aXZxNUlPUjA/view?usp=sharing).
+I started with the dataset, provided by Udacity, but soon appended it with [my own dataset](https://drive.google.com/file/d/0BySmjNMv1bBCdVR6aXZxNUlPUjA/view?usp=sharing).
 
 Here are examples of car images from this set:
 
@@ -23,7 +24,7 @@ Here are examples of car images from this set:
 <img src="./output_images/01-car.png" width="200">
 
 It really contains a lot of cars covered with snow - not specially, just this year
-we had snow from the beginning October to the end of April
+we had snow from the beginning October to the end of April.
 
 Not-cars in this set were mostly collected as false positives of previously trained
 detector, they contain a lot of interesting staff:
@@ -36,19 +37,19 @@ so it contained only images of the vehicles right ahead, and 'side views' were c
 negative examples. For this project I reviewed the set (moving some images between classes),
 now it contains about 14500 positive examples (vehicles) and 16200 negative examples (not vehicles)
 
-I collected this dataset using my car detector, based on OpenCV [CascadeClassifer](http://docs.opencv.org/trunk/db/d28/tutorial_cascade_classifier.html) with LBP featues.
+I collected this dataset using my car detector, based on OpenCV [CascadeClassifer](http://docs.opencv.org/trunk/db/d28/tutorial_cascade_classifier.html) with LBP features.
 I did not use this classifier in the project because:
 - it is clearly stated that we must use HOG features and sliding windows
-- my classifer does not detect vehicles veewn from the side, and to retrain it is too large a task 
+- my classifier does not detect vehicles seen from the side, and to retrain it is too large a task 
 (it takes about 10 days now)
 
 
 #### 2. HOG features extraction
 
-The code for this step is contained in lines # through # of the file called `some_file.py`).  
+The code for this step is contained in the file `extract_features.py`).  
 
-Basing on my experiense, I decided to use images of size 32x32 pixels: I know that it is possible 
-to detect the car with a window of such size - and it is computationally cheeper.
+Basing on my experience, I decided to use images of size 32x32 pixels: I know that it is possible 
+to detect the car with a window of such size - and it is computationally cheaper.
 
 I looked at, but rejected the idea of color-based detection. I can't say for California, 
 but here, in St.-Petersburg, it is often impossible to find any color in car images:
@@ -56,24 +57,24 @@ but here, in St.-Petersburg, it is often impossible to find any color in car ima
 <img src="./output_images/05-colorless.png" width="200">
 
 
-But I didn't discard color completely (converting images to gray) - I just separated intensity
+But I didn't discard color completely (converting images to grey) - I just separated intensity
 and color information by converting images into the HLS color space.
 
 To chose HOG parameters, I built a simple pipeline, consisting of feature generation and
 SVM training on a small subset (1000 images) of the data. 
 
-Final desison was made basing not on accuracy only - but also on time required to calculate
+Final decision was made basing not on accuracy only - but also on time required to calculate
 HOG features and train SVM.
 
 Let me give you some examples (all of them - for window 32x32):
 
 ![Hog Table](output_images/hog_table.png)
 
-As you can see, configuration (9,4,4) gives slightly better resuls, but takes
-much longler to compute and to train. With window size 64x64 the result was (obviously)
+As you can see, configuration (9,4,4) gives slightly better results, but takes
+much longer to compute and to train. With window size 64x64 the result was (obviously)
 even better (accuracy 0.98) but it took 75 seconds to compute HOG features.
 
-So, finally I selected configuration with 11 orientations, 8 pixels per cell and 2 cels per block
+So, finally I selected configuration with 11 orientations, 8 pixels per cell and 2 cells per block
 (last row in the table).
 
 Here is an example of HOG features for car image:
@@ -86,26 +87,28 @@ and for not-car image:
 
 #### 3. SVM training.
 
-To estimate best SVM parameters, I used grid search (file , lines # - #). I performed the search
-in consequtive steps, reducing search range on each step.
+Code for this step is in the file `process_image.py', lines 17-57.
+_
+To estimate best SVM parameters, I used grid search (file p5.py, lines 190 - 207). I performed the search
+in consecutive steps, reducing search range on each step.
 
-For each step new random subset of traingin data was chosen.
+For each step new random subset of training data was chosen.
 
 Final SVM parameters were: C = 2.3, gamma = 6.4e-4.
 
-At this point I noticed, that SVM training and inferece takes a lot of time, and decided to 
+At this point I noticed, that SVM training and inference takes a lot of time, and decided to 
 try HOG and SVM modules from OpenCV.
 
 And it worked!
 
-HOG extraction time reduced from 68 s to 27 s, SVM training time - from 918 to 45 secodns,
+HOG extraction time reduced from 68 s to 27 s, SVM training time - from 918 to 45 seconds,
 and SMV prediction time (on 1000 samples) - from 11 s to 0.5 s!!!
 
 So, from this point I used OpenCV HOG and SVM implementations instead of Sklearn ones.
 
 ### Sliding Window Search
 
-#### 1. Vehicle seacrh.
+#### 1. Vehicle search.
 
 To start search, we must:
 - define scales (sizes of vehicles we would search for)
@@ -115,23 +118,25 @@ Do define possible scales, I measured images of the vehicles on different distan
 It appeared that, given the search windows size of 32x32 pixels, we are interested in 
 scales from 3 to 5 (corresponding window sizes in original image from 96x96 to 160x160 pixels).
 
-I defined search ranges as starting from the point a little bit above the horizeon (yTop = 400)
+I defined search ranges as starting from the point a little bit above the horizon (`yTop = 400`)
 and large enough to fit two rows with 50% overlap.
 
 I tested different combinations of scales and step size: larger number of scales and smaller steps
 lead to better localization - but slow down the detection significantly and increase the number
 of false detections.
 
-Finally, I restrincted scale list to [3, 4, 5] and step size to 1/2 (2 cells, or 16 pixels in 
+Finally, I restricted scale list to [3, 4, 5] and step size to 1/2 (2 cells, or 16 pixels in 
 downscaled window).
 
 Search ranges and examples of search windows positions are shown on the figure below:
 
 ![Windows](output_images/windows.png)
 
-#### 2. Optimizaton
+Code for this step you can find in file `process_image.py`, lines 59-144.
 
-For the first varian of search I used function from the lesson with necessaray modifications
+#### 2. Optimization
+
+For the first variant of search I used function from the lesson with necessaray modifications
 due to the fact that OpenCV SMV always returns vectors. Therefore, I resized the vector response to
 the proper size:
 ```
@@ -146,18 +151,18 @@ the proper size:
 ```
 But calculations performed that war were too slow - only 3-5 frames per second.
 
-Then I decided to try 'batch calculations' (as we use batch mode in ANNs), and rewrite detection fucntion so,
+Then I decided to try 'batch calculations' (as we use batch mode in ANNs), and rewrite detection function so,
 that it collects a bunch of features (all sliding windows from one scale), and then performs
 `svm.predict` on the resulted array.
 
-With this optimization I achieved a speed of 11 - 15 frames per second (on i5 descktop CPU).
+With this optimization I achieved a speed of 11 - 15 frames per second (on i5 desktop CPU).
 
 #### 3. Additional filtering 
 
-This detector (as every other one) is not ideal: it reports a numbwer of false positives, and
+This detector (as every other one) is not ideal: it reports a number of false positives, and
 misses some vehicles (false negatives).
 
-To improve situation, I used heatmap, averaged over time with exponentioal decay:
+To improve situation, I used heat-map, averaged over time with exponential decay:
 ```
    heatmap = heatmap * tau + new_heatmap_
 ```
@@ -166,12 +171,12 @@ Example of the heatmap you can see below.
 
 ![Heatmap](output_images/heatmap.png)
 
-Actually, it's a resulting heatmap (what we get after the last frame of the `project_video`).
+Actually, it's a resulting heat-map (what we get after the last frame of the `project_video`).
 
-Time constant `tau` and threshold were defined experimntally, resulting values are 0.96 and 12.
+Time constant `tau` and threshold were defined experimentally, resulting values are 0.96 and 12.
 You can see, that we nearly detected the car that appears in the left corner of the frame.
  
-
+ Code for this step you can find in file `process_image.py`, lines 160-230.
 
 ### Video Implementation
 
@@ -181,7 +186,7 @@ it has not false negatives (no missed vehicles), and only 3 false positives.
 
 Earlier I received what seems a [better result](./old_result.mp4) - but in reality there
 was an error in heat-map calculation, so I consider it as an accident. And I confirmed it
-by a simple experiment: shift in detection range resulted in a huge amoount of false positives.
+by a simple experiment: shift in detection range resulted in a huge amount of false positives.
 
 
 
@@ -207,11 +212,11 @@ with 15-20 fps on mobile phone!
 implementation in my [test application](https://drive.google.com/open?id=0BySmjNMv1bBCRmVxQkxMOXZUd0E).
 It is not a production software, that one is in private beta now*).
 
-But what if you must detect not only vehicles? On the road, car can meet bycicles, pedestrians,
+But what if you must detect not only vehicles? On the road, car can meet bicycles, pedestrians,
 barriers, animals... Want to add up separate detector for each object? 
 
 So, if the task becomes so serious, we must choose some CNN-based detection (YOLO, SSD) - 
-and appropriate hardware.
+and appropriate hardware to run them in real-time.
 
-But even then I'll have a question: will your system detect and recognize UFO? Dragon? ET?
+But even then I'll have a question: will your system detect and recognize a lion? Dragon? UFO?
 

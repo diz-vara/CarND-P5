@@ -9,22 +9,53 @@ import matplotlib.image as mpimg
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import time
 import cv2
-#from lesson_functions import *
+from scipy.ndimage.measurements import label
 
-#dist_pickle = pickle.load( open("svc_pickle.p", "rb" ) )
-#svc = dist_pickle["svc"]
-#X_scaler = dist_pickle["scaler"]
-#orient = dist_pickle["orient"]
-#pix_per_cell = dist_pickle["pix_per_cell"]
-#cell_per_block = dist_pickle["cell_per_block"]
-#spatial_size = dist_pickle["spatial_size"]
-#ist_bins = dist_pickle["hist_bins"]
 
-#img = mpimg.imread('test_image.jpg')
-ystart = 300
-ystop = 620
-scale = 4
+# Set up SVM from OpenCV 3
+def cv_svm (X_train, X_test, y_train, y_test):
+    C=0.8
+    kernel = 'rbf'
+    gamma = 6.5e-4
+
+    t=time.time()
+    
+    svm = cv2.ml.SVM_create()
+    # Set SVM type
+    svm.setType(cv2.ml.SVM_C_SVC)
+    # Set SVM Kernel to Radial Basis Function (RBF) 
+    svm.setKernel(cv2.ml.SVM_RBF)
+    # Set parameter C
+    svm.setC(C)
+    # Set parameter Gamma
+    svm.setGamma(gamma)
+     
+    # Train SVM on training data  
+    svm.train(X_train, cv2.ml.ROW_SAMPLE, y_train)
+
+    t2 = time.time()
+     
+    # Save trained model 
+    svm.save("./models/u_svm_model.yml");
+     
+    # Test on a held out test set
+    testResponse = svm.predict(X_test)[1].ravel()
+    accuracy = 1-sum(np.abs(testResponse-y_test))/y_test.size
+
+
+    print(round(t2-t, 2), 'Seconds to train cv2.SVM...')
+    # Check the score of the SVC
+    print('Test Accuracy of cv2.SVM = ', round(accuracy, 4))
+    return svm
+    
+def score (svm, X_test, y_test):
+    testResponse = svm.predict(X_test)[1].ravel()
+    accuracy = 1-sum(np.abs(testResponse-y_test))/y_test.size
+    return accuracy
+
+#%%
 # Define a single function that can extract features using hog sub-sampling and make predictions
 def find_cars(img, ystart, ystop, scale, svc, X_scaler, orient, pix_per_cell, 
               cell_per_block, spatial_size, cells_per_step):
@@ -125,16 +156,6 @@ def draw_bboxes(img, bboxes):
     return draw_img    
 
 #%%
-img = images[4]
-t=time.time()
-boxes = find_cars(img, 400, 600, 5, mySvm, X_scaler, 11, 8, 2, 32, 2)
-t2=time.time()
-print(round((t2-t)*1000), 'ms for image')
-
-out_img = draw_bboxes(img, boxes)
-plt.imshow(out_img)
-
-#%%
 
 def boxes_multy_scale(img):
     global scales
@@ -190,29 +211,8 @@ def draw_labeled_bboxes(img, labels):
     
 #%%
 
-heat = np.zeros_like(img[:,:,0]).astype(np.float)
-tau = 0.9
-t=time.time()
 
-for i in [3,4,5]:
-    img = images[i]
-    boxes = boxes_multy_scale(img)
-    heat = add_heat(heat,boxes,tau)
-t2=time.time()
-print(round((t2-t)*1000), 'ms for image')
 
-#out_img = draw_bboxes(img, boxes)
-thr = 6
-#heat[ heat < thr] = 0
-#plt.imshow(heat)
-
-from scipy.ndimage.measurements import label
-
-labels = label(heat)
-draw_img = draw_labeled_bboxes(np.copy(img), labels)
-plt.imshow(draw_img)
-
-#%%
 #main processing pipeline
 def process_image(image):
     global heat;
